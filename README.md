@@ -73,9 +73,10 @@ Tidak perlu menjalankan aria2 secara manual.
 
 ```
 aria2gui/
-├── aria2_gui.py       ← File utama
-├── requirements.txt   ← Dependencies Python
-└── README.md          ← Dokumentasi ini
+├─App
+|  └── aria2_gui.py        ← File utama
+├── requirements.txt       ← Dependencies Python
+└── README.md              ← Dokumentasi ini
 ```
 
 ---
