@@ -7,7 +7,7 @@ Entry point — jalankan file ini untuk membuka aplikasi.
 
 import sys
 from PyQt6.QtWidgets import QApplication
-from main_window import MainWindow
+from main_window_v3 import MainWindow
 
 
 def main():

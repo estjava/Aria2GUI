@@ -12,8 +12,39 @@ from PyQt6.QtWidgets import (
     QProgressBar, QHeaderView, QMessageBox, QFileDialog, QFrame,
     QStatusBar,
 )
-from PyQt6.QtCore import Qt, QTimer
-from PyQt6.QtGui import QColor, QFont, QIcon
+from PyQt6.QtCore import Qt, QTimer, QSize
+from PyQt6.QtGui import QAction, QColor, QFont, QIcon
+import qtawesome as qta
+
+# ── Pemetaan nama logis → nama icon Font Awesome ─────────────────────────────
+#    Ganti value-nya jika ingin pakai icon lain dari qtawesome.
+#    Daftar icon: https://fontawesome.com/icons  (prefix fa5s, fa5r, fa5b, mdi, dll)
+ICONS = {
+    "app":          ("fa5s.download","#3b82f6"),
+    "add":          ("fa5s.plus-circle","#ffffff"),
+    "add-2":        ("fa5s.download","#ffffff"),
+    "torrent":      ("fa5s.magnet","#a78bfa"),
+    "folder":       ("fa5s.folder-open","#94a3b8"),
+    "pause":        ("fa5s.pause-circle","#facc15"),
+    "resume":       ("fa5s.play-circle","#4ade80"),
+    "remove":       ("fa5s.trash-alt","#f87171"),
+    "clear":        ("fa5s.broom","#94a3b8"),
+    "status":       ("fa5s.cloud","#2bff00"),
+    "upload":       ("fa5s.upload","#f7f8fa"),
+    "download":     ("fa5s.download","#64748b"),
+}
+
+def get_icon(name, color=None):
+    """
+    Ambil QIcon dari qtawesome berdasarkan nama logis (key di dict ICONS).
+    Contoh: get_icon("add")  atau  get_icon("pause", color="#ff0000")
+    """
+    if name not in ICONS:
+        return QIcon()
+    fa_name, default_color = ICONS[name]
+    return qta.icon(fa_name, color=color or default_color)
+
+ICON_SIZE = QSize(18, 18)   # ukuran icon di semua tombol
 
 from aria2_client  import Aria2Client
 from aria2_manager import Aria2Manager
@@ -28,7 +59,6 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Aria2 GUI")
         self.setMinimumSize(900, 600)
         self.resize(1100, 700)
-        self.setWindowIcon(QIcon("assets/AriaNg.ico"))  # Bisa diganti dengan QIcon jika ada ikon khusus
 
         self.client       = Aria2Client()
         self.manager      = Aria2Manager()
@@ -36,6 +66,7 @@ class MainWindow(QMainWindow):
         self.download_dir = str(Path.home() / "Downloads")
         self._retry_count = 0
 
+        self.setWindowIcon(QIcon("assets/AriaNg.ico"))        # icon taskbar/titlebar
         self.setStyleSheet(DARK_STYLE)
         self._build_ui()
         self._auto_connect()
@@ -61,6 +92,8 @@ class MainWindow(QMainWindow):
         self._lbl_stat.setStyleSheet("color:#475569; font-size:11px;")
         self.status_bar.addPermanentWidget(self._lbl_stat)
 
+
+    # Toolbars Menu Aktif
     def _build_header(self):
         h = QHBoxLayout()
 
@@ -69,23 +102,26 @@ class MainWindow(QMainWindow):
         title.setStyleSheet("color:#e2e8f0; letter-spacing:-0.5px;")
 
         self.lbl_dot = QLabel("●")
-        self.lbl_dot.setStyleSheet("color:#ef4444; font-size:12px;")
+        self.lbl_dot.setStyleSheet("font-size:12px;")
         self.lbl_dot.setToolTip("Status koneksi aria2")
+        
+        self.lbl_ver = QLabel()
+        self.lbl_ver.setStyleSheet("font-size:14px;")
 
-        self.lbl_ver = QLabel("Tidak terhubung")
-        self.lbl_ver.setStyleSheet("color:#475569; font-size:11px;")
-
-        btn_dir = QPushButton("📁 Folder Download")
+        btn_dir = QPushButton(" Folder")
         btn_dir.setObjectName("btn_clear")
+        btn_dir.setIcon(get_icon("folder"))
+        btn_dir.setIconSize(ICON_SIZE)
         btn_dir.clicked.connect(self._change_dir)
 
-        h.addWidget(title)
-        h.addSpacing(10)
         h.addWidget(self.lbl_dot)
         h.addWidget(self.lbl_ver)
         h.addStretch()
         h.addWidget(btn_dir)
         return h
+
+
+
 
     def _build_url_bar(self):
         frame = QFrame()
@@ -98,13 +134,17 @@ class MainWindow(QMainWindow):
         self.url_input.setStyleSheet("background:transparent;border:none;font-size:13px;")
         self.url_input.returnPressed.connect(self._add_download)
 
-        btn_add = QPushButton("+ Tambah")
+        btn_add = QPushButton(" Download")
         btn_add.setObjectName("btn_add")
+        btn_add.setIcon(get_icon("add-2"))
+        btn_add.setIconSize(ICON_SIZE)
         btn_add.setFixedHeight(36)
         btn_add.clicked.connect(self._add_download)
 
-        btn_torrent = QPushButton("🌱 Torrent")
+        btn_torrent = QPushButton("  Torrent")
         btn_torrent.setObjectName("btn_torrent")
+        btn_torrent.setIcon(get_icon("torrent"))
+        btn_torrent.setIconSize(ICON_SIZE)
         btn_torrent.setFixedHeight(36)
         btn_torrent.clicked.connect(self._add_torrent)
 
@@ -116,20 +156,28 @@ class MainWindow(QMainWindow):
     def _build_toolbar(self):
         h = QHBoxLayout()
 
-        self.btn_pause  = QPushButton("Pause")
+        self.btn_pause  = QPushButton("  Pause")
         self.btn_pause.setObjectName("btn_pause")
+        self.btn_pause.setIcon(get_icon("pause"))
+        self.btn_pause.setIconSize(ICON_SIZE)
         self.btn_pause.clicked.connect(self._pause_selected)
 
-        self.btn_resume = QPushButton("Resume")
+        self.btn_resume = QPushButton("  Resume")
         self.btn_resume.setObjectName("btn_resume")
+        self.btn_resume.setIcon(get_icon("resume"))
+        self.btn_resume.setIconSize(ICON_SIZE)
         self.btn_resume.clicked.connect(self._resume_selected)
 
-        self.btn_remove = QPushButton("Hapus")
+        self.btn_remove = QPushButton("  Remove")
         self.btn_remove.setObjectName("btn_remove")
+        self.btn_remove.setIcon(get_icon("remove"))
+        self.btn_remove.setIconSize(ICON_SIZE)
         self.btn_remove.clicked.connect(self._remove_selected)
 
-        self.btn_clear  = QPushButton("Bersihkan Selesai")
+        self.btn_clear  = QPushButton("  Clear Completed")
         self.btn_clear.setObjectName("btn_clear")
+        self.btn_clear.setIcon(get_icon("clear"))
+        self.btn_clear.setIconSize(ICON_SIZE)
         self.btn_clear.clicked.connect(self._clear_completed)
 
         for btn in [self.btn_pause, self.btn_resume, self.btn_remove, self.btn_clear]:
@@ -137,10 +185,11 @@ class MainWindow(QMainWindow):
 
         h.addStretch()
 
-        self.lbl_dl = QLabel("⬇ —")
-        self.lbl_ul = QLabel("⬆ —")
+        self.lbl_dl = QLabel("—")
+        self.lbl_ul = QLabel("—")
         for lbl in [self.lbl_dl, self.lbl_ul]:
-            lbl.setStyleSheet("color:#64748b; font-size:12px;")
+            lbl.setStyleSheet("color:#64748b; font-size:14px;")
+            lbl.setText(get_icon("upload").pixmap(14, 14).toImage().text(" "))
             h.addWidget(lbl)
 
         return h
@@ -149,7 +198,7 @@ class MainWindow(QMainWindow):
         self.table = QTableWidget()
         self.table.setColumnCount(6)
         self.table.setHorizontalHeaderLabels([
-            "Nama File", "Ukuran", "Progress", "Kecepatan", "Status", "GID"
+            "Name", "Size", "Progress", "Speed", "Status", "GID"
         ])
         header = self.table.horizontalHeader()
         header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
@@ -202,8 +251,8 @@ class MainWindow(QMainWindow):
     def _on_connected(self):
         ver = self.client.get_version()
         self.lbl_dot.setStyleSheet("color:#4ade80; font-size:12px;")
-        self.lbl_ver.setText(f"aria2 v{ver} — terhubung")
-        self.status_bar.showMessage(f"✔ Terhubung ke aria2 v{ver}", 4000)
+        self.lbl_ver.setText(f"aria2 v{ver} — Connected")
+        self.status_bar.showMessage(f"Connected to aria2 v{ver}", 4000)
 
         self.worker = RefreshWorker(self.client)
         self.worker.data_ready.connect(self._update_table)
@@ -211,11 +260,11 @@ class MainWindow(QMainWindow):
 
     def _on_connect_failed(self, msg):
         self.lbl_dot.setStyleSheet("color:#ef4444; font-size:12px;")
-        self.lbl_ver.setText("Tidak terhubung")
-        self.status_bar.showMessage(f"✖ Gagal terhubung")
+        self.lbl_ver.setText("Connection Failed")
+        self.status_bar.showMessage(f"Connection Failed")
         QMessageBox.critical(
-            self, "Gagal Terhubung",
-            f"Tidak bisa terhubung ke aria2.\n\n{msg}"
+            self, "Connection Failed",
+            f"Can't connect to aria2.\n\n{msg}"
         )
 
     # ── DOWNLOAD ACTIONS ──────────────────────────────────────────────────────
@@ -225,14 +274,14 @@ class MainWindow(QMainWindow):
         if not url:
             return
         if not self.client.is_connected():
-            QMessageBox.warning(self, "Tidak terhubung", "aria2 belum terhubung.")
+            QMessageBox.warning(self, "Not Connected", "aria2 not connected.")
             return
         result = self.client.add_uri(url, {"dir": self.download_dir})
         if result:
             self.url_input.clear()
-            self.status_bar.showMessage(f"✔ Download ditambahkan: {url[:60]}", 3000)
+            self.status_bar.showMessage(f"Added: {url[:60]}", 3000)
         else:
-            QMessageBox.warning(self, "Gagal", "Gagal menambahkan URL.")
+            QMessageBox.warning(self, "Failed", "Failed to add URL.")
 
     def _add_torrent(self):
         path, _ = QFileDialog.getOpenFileName(
@@ -244,7 +293,7 @@ class MainWindow(QMainWindow):
         if result:
             self.status_bar.showMessage(f"✔ Torrent: {os.path.basename(path)}", 3000)
         else:
-            QMessageBox.warning(self, "Gagal", "Gagal menambahkan torrent.")
+            QMessageBox.warning(self, "Failed", "Failed to add torrent.")
 
     def _get_selected_gid(self):
         row = self.table.currentRow()
@@ -268,7 +317,7 @@ class MainWindow(QMainWindow):
         if not gid:
             return
         reply = QMessageBox.question(
-            self, "Hapus Download", "Yakin ingin menghapus download ini?",
+            self, "Delete Download", "Yakin ingin menghapus download ini?",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
         )
         if reply == QMessageBox.StandardButton.Yes:
@@ -276,7 +325,7 @@ class MainWindow(QMainWindow):
 
     def _clear_completed(self):
         self.client.purge_download_result()
-        self.status_bar.showMessage("✔ Download selesai dibersihkan", 2000)
+        self.status_bar.showMessage("Download selesai dibersihkan", 2000)
 
     def _change_dir(self):
         d = QFileDialog.getExistingDirectory(self, "Pilih Folder Download", self.download_dir)
@@ -336,8 +385,8 @@ class MainWindow(QMainWindow):
         self.lbl_dl.setText(f"⬇ {fmt_speed(stat.get('downloadSpeed', 0))}")
         self.lbl_ul.setText(f"⬆ {fmt_speed(stat.get('uploadSpeed', 0))}")
         self._lbl_stat.setText(
-            f"Aktif: {stat.get('numActive', 0)}  |  "
-            f"Antrian: {stat.get('numWaiting', 0)}  |  "
+            f"Active: {stat.get('numActive', 0)}  |  "
+            f"Queued: {stat.get('numWaiting', 0)}  |  "
             f"Total: {len(downloads)}"
         )
 

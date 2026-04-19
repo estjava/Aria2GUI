@@ -12,8 +12,25 @@ from PyQt6.QtWidgets import (
     QProgressBar, QHeaderView, QMessageBox, QFileDialog, QFrame,
     QStatusBar,
 )
-from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtCore import Qt, QTimer, QSize
 from PyQt6.QtGui import QColor, QFont, QIcon
+
+# Folder icons relatif terhadap lokasi file ini
+BASE_DIR  = os.path.dirname(os.path.abspath(__file__))
+ICON_DIR  = os.path.join(BASE_DIR, "assets", "icons")
+
+def get_icon(filename):
+    """
+    Ambil QIcon dari assets/icons/<filename>.
+    Jika file tidak ada, kembalikan QIcon kosong (tombol tetap tampil tanpa icon).
+    Contoh: get_icon("add.png")
+    """
+    path = os.path.join(ICON_DIR, filename)
+    if os.path.isfile(path):
+        return QIcon(path)
+    return QIcon()
+
+ICON_SIZE = QSize(18, 18)   # ukuran icon di semua tombol
 
 from aria2_client  import Aria2Client
 from aria2_manager import Aria2Manager
@@ -28,7 +45,6 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Aria2 GUI")
         self.setMinimumSize(900, 600)
         self.resize(1100, 700)
-        self.setWindowIcon(QIcon("assets/AriaNg.ico"))  # Bisa diganti dengan QIcon jika ada ikon khusus
 
         self.client       = Aria2Client()
         self.manager      = Aria2Manager()
@@ -36,6 +52,7 @@ class MainWindow(QMainWindow):
         self.download_dir = str(Path.home() / "Downloads")
         self._retry_count = 0
 
+        self.setWindowIcon(get_icon("app.png"))   # icon taskbar/titlebar
         self.setStyleSheet(DARK_STYLE)
         self._build_ui()
         self._auto_connect()
@@ -75,8 +92,10 @@ class MainWindow(QMainWindow):
         self.lbl_ver = QLabel("Tidak terhubung")
         self.lbl_ver.setStyleSheet("color:#475569; font-size:11px;")
 
-        btn_dir = QPushButton("📁 Folder Download")
+        btn_dir = QPushButton("  Folder Download")
         btn_dir.setObjectName("btn_clear")
+        btn_dir.setIcon(get_icon("folder.png"))
+        btn_dir.setIconSize(ICON_SIZE)
         btn_dir.clicked.connect(self._change_dir)
 
         h.addWidget(title)
@@ -98,13 +117,17 @@ class MainWindow(QMainWindow):
         self.url_input.setStyleSheet("background:transparent;border:none;font-size:13px;")
         self.url_input.returnPressed.connect(self._add_download)
 
-        btn_add = QPushButton("+ Tambah")
+        btn_add = QPushButton("  Tambah")
         btn_add.setObjectName("btn_add")
+        btn_add.setIcon(get_icon("add.png"))
+        btn_add.setIconSize(ICON_SIZE)
         btn_add.setFixedHeight(36)
         btn_add.clicked.connect(self._add_download)
 
-        btn_torrent = QPushButton("🌱 Torrent")
+        btn_torrent = QPushButton("  Torrent")
         btn_torrent.setObjectName("btn_torrent")
+        btn_torrent.setIcon(get_icon("torrent.png"))
+        btn_torrent.setIconSize(ICON_SIZE)
         btn_torrent.setFixedHeight(36)
         btn_torrent.clicked.connect(self._add_torrent)
 
@@ -116,20 +139,28 @@ class MainWindow(QMainWindow):
     def _build_toolbar(self):
         h = QHBoxLayout()
 
-        self.btn_pause  = QPushButton("Pause")
+        self.btn_pause  = QPushButton("  Pause")
         self.btn_pause.setObjectName("btn_pause")
+        self.btn_pause.setIcon(get_icon("pause.png"))
+        self.btn_pause.setIconSize(ICON_SIZE)
         self.btn_pause.clicked.connect(self._pause_selected)
 
-        self.btn_resume = QPushButton("Resume")
+        self.btn_resume = QPushButton("  Resume")
         self.btn_resume.setObjectName("btn_resume")
+        self.btn_resume.setIcon(get_icon("resume.png"))
+        self.btn_resume.setIconSize(ICON_SIZE)
         self.btn_resume.clicked.connect(self._resume_selected)
 
-        self.btn_remove = QPushButton("Hapus")
+        self.btn_remove = QPushButton("  Hapus")
         self.btn_remove.setObjectName("btn_remove")
+        self.btn_remove.setIcon(get_icon("remove.png"))
+        self.btn_remove.setIconSize(ICON_SIZE)
         self.btn_remove.clicked.connect(self._remove_selected)
 
-        self.btn_clear  = QPushButton("Bersihkan Selesai")
+        self.btn_clear  = QPushButton("  Bersihkan Selesai")
         self.btn_clear.setObjectName("btn_clear")
+        self.btn_clear.setIcon(get_icon("clear.png"))
+        self.btn_clear.setIconSize(ICON_SIZE)
         self.btn_clear.clicked.connect(self._clear_completed)
 
         for btn in [self.btn_pause, self.btn_resume, self.btn_remove, self.btn_clear]:
