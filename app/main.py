@@ -1,14 +1,8 @@
-"""
-main.py
-Entry point — jalankan file ini untuk membuka aplikasi.
-
-    python main.py
-"""
+# This Python file uses the following encoding: utf-8
 
 import sys
 from PyQt6.QtWidgets import QApplication
 from main_window import MainWindow
-
 
 def main():
     app = QApplication(sys.argv)

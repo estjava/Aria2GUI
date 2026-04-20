@@ -2,23 +2,31 @@
 main_window.py
 Assembly utama — hanya menyatukan komponen UI dan menangani logika bisnis.
 Untuk ubah tampilan, edit file di folder ui/.
-Untuk ubah koneksi aria2, edit file di folder aria2/.
+Untuk ubah koneksi aria2, edit file di folder aria2_core/.
+Untuk ubah teks/bahasa, edit file di folder localization/.
 """
 
 import os
 from pathlib import Path
 
-from PyQt6.QtWidgets import (
-    QMainWindow, QWidget, QVBoxLayout,
-    QLabel, QStatusBar, QMessageBox, QFileDialog,
+from PyQt6.QtWidgets    import (
+    QMainWindow, 
+    QWidget, 
+    QVBoxLayout,
+    QLabel, 
+    QStatusBar, 
+    QMessageBox, 
+    QFileDialog,
 )
-from PyQt6.QtCore import QTimer, QPoint
+from PyQt6.QtCore       import QTimer, QPoint
 
-from aria2 import Aria2Client, Aria2Manager, RefreshWorker
-from helpers import fmt_size, fmt_speed
-from styles  import DARK_STYLE
-from ui      import (
+from aria2              import Aria2Client, Aria2Manager, RefreshWorker
+from helpers            import fmt_size, fmt_speed
+from styles             import DARK_STYLE
+from localization       import tr, Translator
+from ui                 import (
     get_icon,
+    build_menu_bar,
     build_header,
     build_url_bar,
     build_toolbar,
@@ -31,17 +39,16 @@ from ui      import (
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Aria2 GUI")
+        self.setWindowTitle(tr("app_title"))
         self.setMinimumSize(900, 600)
         self.resize(1100, 700)
 
-        # State
         self.client       = Aria2Client()
         self.manager      = Aria2Manager()
         self.worker       = None
         self.download_dir = str(Path.home() / "Downloads")
         self._retry_count = 0
-        self._downloads   = []   # cache download untuk context menu & detail
+        self._downloads   = []
 
         self.setWindowIcon(get_icon("app"))
         self.setStyleSheet(DARK_STYLE)
@@ -51,6 +58,8 @@ class MainWindow(QMainWindow):
     # ── ASSEMBLY UI ───────────────────────────────────────────────────────────
 
     def _build_ui(self):
+        build_menu_bar(self)
+
         central = QWidget()
         self.setCentralWidget(central)
         root = QVBoxLayout(central)
@@ -62,17 +71,48 @@ class MainWindow(QMainWindow):
         root.addLayout(build_toolbar(self))
         root.addWidget(build_table(self), stretch=1)
 
-        # Status bar
+        self._build_status_bar()
+
+    def _build_status_bar(self):
         self.status_bar = QStatusBar()
         self.setStatusBar(self.status_bar)
-        self._lbl_stat = QLabel("—")
-        self._lbl_stat.setStyleSheet("color:#475569; font-size:11px;")
+
+        # KIRI (permanent) — indikator koneksi aria2
+        self.lbl_dot = QLabel("●")
+        self.lbl_dot.setStyleSheet("color:#ef4444; font-size:10px; padding:0 2px 0 6px;")
+        self.lbl_dot.setToolTip("Status koneksi aria2")
+
+        self.lbl_ver = QLabel(tr("sb_disconnected"))
+        self.lbl_ver.setStyleSheet("color:#475569; font-size:11px; padding-right:10px;")
+
+        self.status_bar.insertPermanentWidget(0, self.lbl_dot)
+        self.status_bar.insertPermanentWidget(1, self.lbl_ver)
+
+        # KANAN (permanent) — kecepatan & statistik download
+        self.lbl_dl = QLabel("⬇ —")
+        self.lbl_dl.setStyleSheet("color:#64748b; font-size:11px; padding-right:4px;")
+
+        self.lbl_ul = QLabel("⬆ —")
+        self.lbl_ul.setStyleSheet("color:#64748b; font-size:11px; padding-right:10px;")
+
+        self._lbl_stat = QLabel(
+            f"{tr('sb_active')}: 0  |  {tr('sb_waiting')}: 0  |  {tr('sb_total')}: 0"
+        )
+        self._lbl_stat.setStyleSheet("color:#475569; font-size:11px; padding-right:6px;")
+
+        self.status_bar.addPermanentWidget(self.lbl_dl)
+        self.status_bar.addPermanentWidget(self.lbl_ul)
         self.status_bar.addPermanentWidget(self._lbl_stat)
+
+    def _set_status(self, msg: str, timeout: int = 3000):
+        """Tampilkan pesan sementara di tengah status bar."""
+        self.status_bar.showMessage(msg, timeout)
 
     # ── AUTO CONNECT ──────────────────────────────────────────────────────────
 
     def _auto_connect(self):
-        self.status_bar.showMessage("Mencoba koneksi ke aria2...")
+        self.lbl_ver.setText(tr("sb_connecting"))
+        self._set_status(tr("sb_trying"))
         QTimer.singleShot(200, self._try_connect)
 
     def _try_connect(self):
@@ -80,7 +120,8 @@ class MainWindow(QMainWindow):
             self._on_connected()
             return
 
-        self.status_bar.showMessage("aria2 tidak berjalan, mencoba menjalankan otomatis...")
+        self.lbl_ver.setText(tr("sb_starting"))
+        self._set_status(tr("sb_starting_auto"))
         ok, msg = self.manager.start(port=6800, download_dir=self.download_dir)
         if not ok:
             self._on_connect_failed(msg)
@@ -101,20 +142,22 @@ class MainWindow(QMainWindow):
 
     def _on_connected(self):
         ver = self.client.get_version()
-        self.lbl_dot.setStyleSheet("color:#4ade80; font-size:12px;")
-        self.lbl_ver.setText(f"aria2 v{ver} — terhubung")
-        self.status_bar.showMessage(f"✔ Terhubung ke aria2 v{ver}", 4000)
+        self.lbl_dot.setStyleSheet("color:#4ade80; font-size:10px; padding:0 2px 0 6px;")
+        self.lbl_ver.setText(tr("sb_connected_label", ver=ver))
+        self.lbl_ver.setStyleSheet("color:#4ade80; font-size:11px; padding-right:10px;")
+        self._set_status(tr("sb_connected", ver=ver), 4000)
 
         self.worker = RefreshWorker(self.client)
         self.worker.data_ready.connect(self._on_data_ready)
         self.worker.start()
 
     def _on_connect_failed(self, msg):
-        self.lbl_dot.setStyleSheet("color:#ef4444; font-size:12px;")
-        self.lbl_ver.setText("Tidak terhubung")
-        self.status_bar.showMessage("✖ Gagal terhubung")
-        QMessageBox.critical(self, "Gagal Terhubung",
-                             f"Tidak bisa terhubung ke aria2.\n\n{msg}")
+        self.lbl_dot.setStyleSheet("color:#ef4444; font-size:10px; padding:0 2px 0 6px;")
+        self.lbl_ver.setText(tr("sb_disconnected"))
+        self.lbl_ver.setStyleSheet("color:#ef4444; font-size:11px; padding-right:10px;")
+        self._set_status(tr("sb_failed", msg=msg), 8000)
+        QMessageBox.critical(self, tr("dlg_connect_fail_title"),
+                             tr("dlg_connect_fail_msg", msg=msg))
 
     # ── DATA REFRESH ──────────────────────────────────────────────────────────
 
@@ -133,26 +176,27 @@ class MainWindow(QMainWindow):
         if not url:
             return
         if not self.client.is_connected():
-            QMessageBox.warning(self, "Tidak terhubung", "aria2 belum terhubung.")
+            QMessageBox.warning(self, tr("dlg_not_connected_title"),
+                                tr("dlg_not_connected_msg"))
             return
         result = self.client.add_uri(url, {"dir": self.download_dir})
         if result:
             self.url_input.clear()
-            self.status_bar.showMessage(f"✔ Download ditambahkan: {url[:60]}", 3000)
+            self._set_status(tr("sb_added", url=url[:60]))
         else:
-            QMessageBox.warning(self, "Gagal", "Gagal menambahkan URL.")
+            QMessageBox.warning(self, tr("dlg_failed_title"), tr("dlg_failed_add"))
 
     def _add_torrent(self):
         path, _ = QFileDialog.getOpenFileName(
-            self, "Pilih file .torrent", self.download_dir, "Torrent Files (*.torrent)"
+            self, tr("dlg_torrent_title"), self.download_dir, tr("dlg_torrent_filter")
         )
         if not path:
             return
         result = self.client.add_torrent(path, {"dir": self.download_dir})
         if result:
-            self.status_bar.showMessage(f"✔ Torrent: {os.path.basename(path)}", 3000)
+            self._set_status(tr("sb_torrent_added", name=os.path.basename(path)))
         else:
-            QMessageBox.warning(self, "Gagal", "Gagal menambahkan torrent.")
+            QMessageBox.warning(self, tr("dlg_failed_title"), tr("dlg_failed_torrent"))
 
     def _get_selected_gid(self):
         row = self.table.currentRow()
@@ -161,38 +205,21 @@ class MainWindow(QMainWindow):
         item = self.table.item(row, 5)
         return item.text() if item else None
 
-    def _pause_selected(self):
-        gid = self._get_selected_gid()
-        if gid:
-            self.client.pause(gid)
-
-    def _resume_selected(self):
-        gid = self._get_selected_gid()
-        if gid:
-            self.client.unpause(gid)
-
     def _toggle_pause_resume(self):
-        """Toggle pause/resume berdasarkan status download yang dipilih."""
         gid = self._get_selected_gid()
         if not gid:
             return
-
-        # Cari status download dari cache
         d      = next((x for x in self._downloads if x.get("gid") == gid), {})
         status = d.get("status", "")
-
         if status == "active":
             self.client.pause(gid)
+            self._set_status(tr("sb_paused"))
         elif status in ("paused", "waiting"):
             self.client.unpause(gid)
+            self._set_status(tr("sb_resumed"))
 
     def _sync_pause_resume_btn(self):
-        """
-        Perbarui icon & label tombol toggle sesuai status baris yang dipilih.
-        - active  → tampilkan "Pause"
-        - paused/waiting → tampilkan "Resume"
-        - lainnya → disable tombol
-        """
+        """Perbarui icon & label tombol toggle sesuai status baris yang dipilih."""
         from ui.icons import get_icon, ICON_SIZE
         gid    = self._get_selected_gid()
         btn    = self.btn_pause_resume
@@ -200,22 +227,21 @@ class MainWindow(QMainWindow):
         status = d.get("status", "")
 
         if status == "active":
-            btn.setText("  Pause")
+            btn.setText(tr("btn_pause"))
             btn.setIcon(get_icon("pause"))
             btn.setObjectName("btn_pause")
             btn.setEnabled(True)
         elif status in ("paused", "waiting"):
-            btn.setText("  Resume")
+            btn.setText(tr("btn_resume"))
             btn.setIcon(get_icon("resume"))
             btn.setObjectName("btn_resume")
             btn.setEnabled(True)
         else:
-            btn.setText("  Pause")
+            btn.setText(tr("btn_pause"))
             btn.setIcon(get_icon("pause"))
             btn.setObjectName("btn_pause")
             btn.setEnabled(False)
 
-        # Re-apply stylesheet agar objectName baru terbaca
         btn.setStyle(btn.style())
 
     def _remove_selected(self):
@@ -223,23 +249,24 @@ class MainWindow(QMainWindow):
         if not gid:
             return
         reply = QMessageBox.question(
-            self, "Hapus Download", "Yakin ingin menghapus download ini?",
+            self, tr("dlg_remove_title"), tr("dlg_remove_msg"),
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
         )
         if reply == QMessageBox.StandardButton.Yes:
             self.client.remove(gid)
+            self._set_status(tr("sb_removed"))
 
     def _clear_completed(self):
         self.client.purge_download_result()
-        self.status_bar.showMessage("✔ Download selesai dibersihkan", 2000)
+        self._set_status(tr("sb_cleared"))
 
     def _change_dir(self):
         d = QFileDialog.getExistingDirectory(
-            self, "Pilih Folder Download", self.download_dir
+            self, tr("dlg_folder_title"), self.download_dir
         )
         if d:
             self.download_dir = d
-            self.status_bar.showMessage(f"Folder download: {d}", 3000)
+            self._set_status(tr("sb_folder_changed", path=d))
 
     # ── CLOSE ─────────────────────────────────────────────────────────────────
 
@@ -250,8 +277,7 @@ class MainWindow(QMainWindow):
 
         if self.manager.is_running():
             reply = QMessageBox.question(
-                self, "Tutup Aplikasi",
-                "Apakah ingin menghentikan aria2 juga?",
+                self, tr("dlg_close_title"), tr("dlg_close_msg"),
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
             )
             if reply == QMessageBox.StandardButton.Yes:

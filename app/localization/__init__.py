@@ -1,0 +1,1 @@
+from .translator import Translator, tr, set_language

@@ -7,21 +7,26 @@ from PyQt6.QtWidgets import QTableWidget, QTableWidgetItem, QProgressBar, QHeade
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QColor
 
-from helpers import fmt_size, fmt_speed, get_filename, STATUS_LABELS
+from localization import tr
+from helpers import fmt_size, fmt_speed, get_filename
+
+# Mapping status aria2 → (key tr, warna)
+STATUS_MAP = {
+    "active":   ("status_active",   "#4ade80"),
+    "waiting":  ("status_waiting",  "#facc15"),
+    "paused":   ("status_paused",   "#94a3b8"),
+    "complete": ("status_complete", "#60a5fa"),
+    "error":    ("status_error",    "#f87171"),
+    "removed":  ("status_removed",  "#f87171"),
+}
 
 
 def build_table(window) -> QTableWidget:
-    """
-    Buat dan kembalikan QTableWidget download.
-    Menyimpan referensi ke `window.table`.
-
-    Parameter:
-        window — instance MainWindow, dipakai untuk connect context menu
-    """
     table = QTableWidget()
     table.setColumnCount(6)
     table.setHorizontalHeaderLabels([
-        "Nama File", "Ukuran", "Progress", "Kecepatan", "Status", "GID"
+        tr("col_name"), tr("col_size"), tr("col_progress"),
+        tr("col_speed"), tr("col_status"), tr("col_gid"),
     ])
 
     header = table.horizontalHeader()
@@ -38,11 +43,8 @@ def build_table(window) -> QTableWidget:
     table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
     table.setShowGrid(False)
 
-    # Aktifkan context menu klik kanan
     table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
     table.customContextMenuRequested.connect(window._show_context_menu)
-
-    # Sync tombol toggle saat baris dipilih
     table.itemSelectionChanged.connect(window._sync_pause_resume_btn)
 
     window.table = table
@@ -50,16 +52,7 @@ def build_table(window) -> QTableWidget:
 
 
 def update_table(window, downloads: list, stat: dict):
-    """
-    Perbarui isi tabel dengan data terbaru dari aria2.
-    Juga update label kecepatan & stat bar di window.
-
-    Parameter:
-        window    — instance MainWindow
-        downloads — list data download dari aria2
-        stat      — dict global stat dari aria2
-    """
-    window._downloads = downloads   # cache untuk context menu & detail dialog
+    window._downloads = downloads
     window.table.setRowCount(len(downloads))
 
     for row, d in enumerate(downloads):
@@ -69,15 +62,11 @@ def update_table(window, downloads: list, stat: dict):
         status = d.get("status", "unknown")
         pct    = int(done / total * 100) if total > 0 else 0
 
-        # Nama file
         window.table.setItem(row, 0, QTableWidgetItem(get_filename(d)))
-
-        # Ukuran
         window.table.setItem(row, 1, QTableWidgetItem(
             fmt_size(total) if total else "—"
         ))
 
-        # Progress bar
         bar = QProgressBar()
         bar.setValue(pct)
         bar.setFormat(f"{pct}%")
@@ -89,31 +78,25 @@ def update_table(window, downloads: list, stat: dict):
         )
         window.table.setCellWidget(row, 2, bar)
 
-        # Kecepatan
         window.table.setItem(row, 3, QTableWidgetItem(
             fmt_speed(speed) if status == "active" else "—"
         ))
 
-        # Status
-        label, color = STATUS_LABELS.get(status, (status, "#94a3b8"))
-        st_item = QTableWidgetItem(label)
+        tr_key, color = STATUS_MAP.get(status, ("status_error", "#94a3b8"))
+        st_item = QTableWidgetItem(tr(tr_key))
         st_item.setForeground(QColor(color))
         window.table.setItem(row, 4, st_item)
 
-        # GID
         gid_item = QTableWidgetItem(d.get("gid", ""))
         gid_item.setForeground(QColor("#334155"))
         window.table.setItem(row, 5, gid_item)
 
         window.table.setRowHeight(row, 42)
 
-    # Update label kecepatan global
     window.lbl_dl.setText(f"⬇ {fmt_speed(stat.get('downloadSpeed', 0))}")
     window.lbl_ul.setText(f"⬆ {fmt_speed(stat.get('uploadSpeed', 0))}")
-
-    # Update status bar
     window._lbl_stat.setText(
-        f"Aktif: {stat.get('numActive', 0)}  |  "
-        f"Antrian: {stat.get('numWaiting', 0)}  |  "
-        f"Total: {len(downloads)}"
+        f"{tr('sb_active')}: {stat.get('numActive', 0)}  |  "
+        f"{tr('sb_waiting')}: {stat.get('numWaiting', 0)}  |  "
+        f"{tr('sb_total')}: {len(downloads)}"
     )

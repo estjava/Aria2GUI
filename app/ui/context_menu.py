@@ -10,9 +10,8 @@ import subprocess
 from PyQt6.QtWidgets import QMenu, QMessageBox
 from PyQt6.QtCore import QPoint
 
+from localization import tr
 from ui.icons import get_icon
-from helpers import STATUS_LABELS
-
 
 MENU_STYLE = """
     QMenu {
@@ -23,89 +22,58 @@ MENU_STYLE = """
         color: #e2e8f0;
         font-size: 13px;
     }
-    QMenu::item {
-        padding: 8px 20px 8px 12px;
-        border-radius: 4px;
-    }
-    QMenu::item:selected {
-        background-color: #2d3748;
-    }
-    QMenu::separator {
-        height: 1px;
-        background: #2d3748;
-        margin: 4px 8px;
-    }
-    QMenu::item:disabled {
-        color: #475569;
-    }
+    QMenu::item { padding: 8px 20px 8px 12px; border-radius: 4px; }
+    QMenu::item:selected { background-color: #2d3748; }
+    QMenu::separator { height: 1px; background: #2d3748; margin: 4px 8px; }
+    QMenu::item:disabled { color: #475569; }
 """
 
 
 def show_context_menu(window, pos: QPoint):
-    """
-    Tampilkan context menu pada posisi klik kanan di tabel.
-
-    Item menu:
-        - Pause / Resume  (adaptif sesuai status)
-        - Buka Folder File
-        - Lihat Detail
-        - Hapus
-
-    Parameter:
-        window — instance MainWindow
-        pos    — posisi klik dalam koordinat viewport tabel
-    """
     row = window.table.rowAt(pos.y())
     if row < 0:
         return
 
     window.table.selectRow(row)
-
     d      = window._downloads[row] if row < len(window._downloads) else {}
     status = d.get("status", "")
 
     menu = QMenu(window)
     menu.setStyleSheet(MENU_STYLE)
 
-    # ── Pause / Resume ──────────────────────────────
     if status == "active":
-        act = menu.addAction(get_icon("pause"), "  Pause")
-        act.triggered.connect(window._pause_selected)
+        act = menu.addAction(get_icon("pause"), tr("ctx_pause"))
+        act.triggered.connect(window._toggle_pause_resume)
     elif status in ("paused", "waiting"):
-        act = menu.addAction(get_icon("resume"), "  Resume")
-        act.triggered.connect(window._resume_selected)
+        act = menu.addAction(get_icon("resume"), tr("ctx_resume"))
+        act.triggered.connect(window._toggle_pause_resume)
     else:
-        act = menu.addAction("  Pause / Resume")
+        act = menu.addAction(tr("ctx_pause_resume"))
         act.setEnabled(False)
 
     menu.addSeparator()
 
-    # ── Buka Folder ─────────────────────────────────
-    act_folder = menu.addAction(get_icon("open"), "  Buka Folder File")
+    act_folder = menu.addAction(get_icon("open"), tr("ctx_open_folder"))
     act_folder.triggered.connect(lambda: open_folder(window, d))
 
     menu.addSeparator()
 
-    # ── Detail ──────────────────────────────────────
-    act_detail = menu.addAction(get_icon("detail"), "  Lihat Detail")
+    act_detail = menu.addAction(get_icon("detail"), tr("ctx_detail"))
     act_detail.triggered.connect(lambda: _trigger_detail(window, d))
 
     menu.addSeparator()
 
-    # ── Hapus ────────────────────────────────────────
-    act_remove = menu.addAction(get_icon("remove"), "  Hapus")
+    act_remove = menu.addAction(get_icon("remove"), tr("ctx_remove"))
     act_remove.triggered.connect(window._remove_selected)
 
     menu.exec(window.table.viewport().mapToGlobal(pos))
 
 
 def open_folder(window, d: dict):
-    """Buka folder tempat file disimpan di file manager OS."""
     try:
         files  = d.get("files", [])
         path   = files[0].get("path", "") if files else ""
         folder = os.path.dirname(path) if path else window.download_dir
-
         if not os.path.isdir(folder):
             folder = window.download_dir
 
@@ -115,12 +83,11 @@ def open_folder(window, d: dict):
             subprocess.Popen(["open", folder])
         else:
             subprocess.Popen(["xdg-open", folder])
-
     except Exception as e:
-        QMessageBox.warning(window, "Gagal", f"Tidak bisa membuka folder:\n{e}")
+        QMessageBox.warning(window, tr("dlg_failed_title"),
+                            tr("dlg_open_folder_fail", err=str(e)))
 
 
 def _trigger_detail(window, d: dict):
-    """Delegate ke detail_dialog melalui window agar tidak circular import."""
     from ui.detail_dialog import show_detail
     show_detail(window, d)
