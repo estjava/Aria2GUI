@@ -7,18 +7,19 @@ from PyQt6.QtWidgets import QFrame, QHBoxLayout, QLineEdit, QPushButton
 
 from localization import tr
 from ui.icons import get_icon, ICON_SIZE
+from styles import DARK_STYLE
 
 
 def build_url_bar(window) -> QFrame:
     frame = QFrame()
-    frame.setStyleSheet("QFrame{background:#1a1f2e;border-radius:8px;}")
+    frame.setStyleSheet(DARK_STYLE)
 
     h = QHBoxLayout(frame)
     h.setContentsMargins(12, 8, 8, 8)
 
     window.url_input = QLineEdit()
     window.url_input.setPlaceholderText(tr("url_placeholder"))
-    window.url_input.setStyleSheet("background:transparent;border:none;font-size:13px;")
+    window.url_input.setStyleSheet(DARK_STYLE)
     window.url_input.returnPressed.connect(window._add_download)
 
     window.btn_add_url = QPushButton(tr("btn_add"))

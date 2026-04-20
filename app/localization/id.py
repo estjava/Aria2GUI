@@ -39,6 +39,7 @@ STRINGS = {
     "btn_clear":                "  Bersihkan Selesai",
 
     # ── Table headers ────────────────────────────────────────
+    "col_num":                  "No.",
     "col_name":                 "Nama File",
     "col_size":                 "Ukuran",
     "col_progress":             "Progress",

@@ -25,13 +25,18 @@ def build_table(window) -> QTableWidget:
     table = QTableWidget()
     table.setColumnCount(6)
     table.setHorizontalHeaderLabels([
-        tr("col_name"), tr("col_size"), tr("col_progress"),
-        tr("col_speed"), tr("col_status"), tr("col_gid"),
+#        tr("col_num"),
+        tr("col_name"), 
+        tr("col_size"), 
+        tr("col_progress"),
+        tr("col_speed"), 
+        tr("col_status"), 
+        tr("col_gid"),
     ])
 
     header = table.horizontalHeader()
     header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
-    header.setSectionResizeMode(2, QHeaderView.ResizeMode.Fixed)
+    header.setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)
     table.setColumnWidth(1, 90)
     table.setColumnWidth(2, 160)
     table.setColumnWidth(3, 100)
@@ -41,7 +46,7 @@ def build_table(window) -> QTableWidget:
     table.verticalHeader().setVisible(False)
     table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
     table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
-    table.setShowGrid(False)
+    table.setShowGrid(True)
 
     table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
     table.customContextMenuRequested.connect(window._show_context_menu)
@@ -71,11 +76,7 @@ def update_table(window, downloads: list, stat: dict):
         bar.setValue(pct)
         bar.setFormat(f"{pct}%")
         bar.setTextVisible(True)
-        bar.setStyleSheet(
-            "QProgressBar{background:#1a1f2e;border:none;border-radius:3px;"
-            "color:#94a3b8;font-size:11px;}"
-            "QProgressBar::chunk{background:#3b82f6;border-radius:3px;}"
-        )
+
         window.table.setCellWidget(row, 2, bar)
 
         window.table.setItem(row, 3, QTableWidgetItem(

@@ -12,21 +12,8 @@ from PyQt6.QtCore import QPoint
 
 from localization import tr
 from ui.icons import get_icon
+from styles             import DARK_STYLE
 
-MENU_STYLE = """
-    QMenu {
-        background-color: #1a1f2e;
-        border: 1px solid #2d3748;
-        border-radius: 8px;
-        padding: 4px;
-        color: #e2e8f0;
-        font-size: 13px;
-    }
-    QMenu::item { padding: 8px 20px 8px 12px; border-radius: 4px; }
-    QMenu::item:selected { background-color: #2d3748; }
-    QMenu::separator { height: 1px; background: #2d3748; margin: 4px 8px; }
-    QMenu::item:disabled { color: #475569; }
-"""
 
 
 def show_context_menu(window, pos: QPoint):
@@ -39,7 +26,7 @@ def show_context_menu(window, pos: QPoint):
     status = d.get("status", "")
 
     menu = QMenu(window)
-    menu.setStyleSheet(MENU_STYLE)
+    menu.setStyleSheet(DARK_STYLE)  # Gunakan stylesheet yang sama dengan menu bar
 
     if status == "active":
         act = menu.addAction(get_icon("pause"), tr("ctx_pause"))
