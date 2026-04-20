@@ -1,5 +1,6 @@
 # Aria2 GUI
-![Python](https://shields.io)
+![Python 3.10]
+![aria2c 1.37.0]
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 Download manager GUI untuk [aria2](https://aria2.github.io/), dibangun dengan Python & PyQt6.
