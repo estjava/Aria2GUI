@@ -4,7 +4,8 @@ Semua stylesheet QSS untuk tampilan dark mode aplikasi.
 """
 
 DARK_STYLE = """
-QMainWindow, QWidget {
+QMainWindow, 
+QWidget {
     background-color: #0f1117;
     color: #e2e8f0;
     font-family: 'Segoe UI', 'SF Pro Display', sans-serif;
@@ -89,6 +90,7 @@ QPushButton#btn_torrent {
 }
 QPushButton#btn_torrent:hover { background-color: #2d3748; }
 
+
 QTableWidget {
     background-color: #0f1117;
     border: none;
@@ -104,6 +106,8 @@ QTableWidget::item:selected {
     background-color: #1e2a3a;
     color: #e2e8f0;
 }
+
+
 QHeaderView::section {
     background-color: #1a1f2e;
     color: #64748b;
@@ -113,6 +117,8 @@ QHeaderView::section {
     font-weight: bold;
     letter-spacing: 0.5px;
 }
+
+
 
 QProgressBar {
     background-color: #1a1f2e;
@@ -146,4 +152,5 @@ QScrollBar::handle:vertical {
 }
 QScrollBar::add-line:vertical,
 QScrollBar::sub-line:vertical { height: 0; }
+
 """

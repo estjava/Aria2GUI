@@ -1,12 +1,35 @@
-# Aria2 GUI — PyQt6
+# Aria2 GUI
 
-Download manager GUI untuk aria2, dengan auto-connect RPC.
+Download manager GUI untuk [aria2](https://aria2.github.io/), dibangun dengan Python & PyQt6.
+Auto-start dan auto-connect ke aria2 RPC — tidak perlu menjalankan aria2 secara manual.
+
+---
+
+## Fitur
+
+- ⚡ Auto-start & auto-connect aria2 RPC
+- ➕ Tambah download dari URL (HTTP, HTTPS, FTP, Magnet)
+- 🌱 Tambah download dari file `.torrent`
+- 📊 Progress bar real-time per file
+- ⏯ Toggle Pause / Resume dalam satu tombol
+- 🗑 Hapus download
+- 🧹 Bersihkan download selesai sekaligus
+- 📁 Pilih folder download
+- 🖱 Context menu klik kanan (Pause/Resume, Buka Folder, Detail, Hapus)
+- ℹ️ Dialog detail info lengkap per download
+- ⬇⬆ Tampilan kecepatan download & upload global
+- 🌙 Dark mode UI
+- 🎨 Icon via [qtawesome](https://github.com/spyder-ide/qtawesome) (Font Awesome)
 
 ---
 
 ## Cara Install
 
 ### 1. Install aria2
+
+**Windows:**
+Download `aria2c.exe` dari https://github.com/aria2/aria2/releases
+lalu tambahkan ke PATH, atau letakkan di folder `app/`.
 
 **Linux (Debian/Ubuntu):**
 ```bash
@@ -18,18 +41,10 @@ sudo apt install aria2
 sudo pacman -S aria2
 ```
 
-**Windows:**
-Download `aria2c.exe` dari:
-https://github.com/aria2/aria2/releases
-Letakkan `aria2c.exe` di folder yang sama dengan `aria2_gui.py`,
-atau tambahkan ke PATH.
-
 **macOS:**
 ```bash
 brew install aria2
 ```
-
----
 
 ### 2. Install Python dependencies
 
@@ -37,56 +52,70 @@ brew install aria2
 pip install -r requirements.txt
 ```
 
-Atau manual:
-```bash
-pip install PyQt6 requests
-```
-
----
-
 ### 3. Jalankan
 
 ```bash
-python aria2_gui.py
+cd app
+python main.py
 ```
-
-Aplikasi akan **otomatis menjalankan aria2** di background dan connect ke RPC-nya.
-Tidak perlu menjalankan aria2 secara manual.
 
 ---
 
-## Fitur
+## Struktur Project
 
-- ✅ Auto-start & auto-connect aria2 RPC
-- ✅ Tambah download dari URL (HTTP, FTP, Magnet)
-- ✅ Tambah download dari file .torrent
-- ✅ Progress bar real-time per file
-- ✅ Pause / Resume / Hapus download
-- ✅ Bersihkan download selesai
-- ✅ Pilih folder download
-- ✅ Tampilan kecepatan download & upload global
-- ✅ Dark mode UI
+```
+Aria2GUI/
+├── assets/                  ← resource (icons, dll)
+├── requirements.txt
+└── app/
+    ├── main.py              ← entry point
+    ├── main_window.py       ← assembly UI + logika bisnis
+    ├── helpers.py           ← fungsi utilitas (format size, speed, dll)
+    ├── styles.py            ← stylesheet QSS dark mode
+    ├── aria2_core/          ← modul komunikasi aria2
+    │   ├── __init__.py
+    │   ├── aria2_client.py  ← JSON-RPC client
+    │   ├── aria2_manager.py ← auto-start/stop proses aria2c
+    │   └── aria2_worker.py  ← background thread polling data
+    └── ui/                  ← komponen UI
+        ├── __init__.py
+        ├── icons.py         ← pemetaan icon qtawesome
+        ├── header.py        ← header (judul, status koneksi)
+        ├── url_bar.py       ← input URL + tombol tambah
+        ├── toolbar.py       ← toolbar aksi download
+        ├── download_table.py← tabel download + update data
+        ├── context_menu.py  ← context menu klik kanan
+        └── detail_dialog.py ← dialog detail download
+```
 
 ---
 
-## Struktur File
+## Dependencies
 
-```
-aria2gui/
-├─App
-|  └── aria2_gui.py        ← File utama
-├── requirements.txt       ← Dependencies Python
-└── README.md              ← Dokumentasi ini
-```
+| Package | Versi minimum | Kegunaan |
+|---|---|---|
+| PyQt6 | 6.4.0 | Framework GUI |
+| requests | 2.28.0 | HTTP ke aria2 RPC |
+| qtawesome | 1.3.0 | Icon Font Awesome |
 
 ---
 
 ## Troubleshooting
 
-**"aria2c tidak ditemukan"**
-→ Pastikan `aria2c` sudah terinstall dan bisa dijalankan dari terminal.
-   Cek dengan: `aria2c --version`
+**`aria2c tidak ditemukan`**
+→ Pastikan aria2 sudah terinstall dan bisa dijalankan dari terminal.
+Cek dengan: `aria2c --version`
+
+**`ImportError: cannot import name 'Aria2Client' from 'aria2'`**
+→ Pastikan folder yang dipakai adalah `aria2_core/`, bukan `aria2/`.
+Konflik nama dengan package sistem.
 
 **Port sudah dipakai**
 → Pastikan tidak ada instance aria2 lain yang berjalan di port 6800.
-   Matikan dengan: `pkill aria2c` (Linux/macOS) atau Task Manager (Windows).
+Matikan dengan `pkill aria2c` (Linux/macOS) atau Task Manager (Windows).
+
+---
+
+## Lisensi
+
+[MIT](LICENSE)
