@@ -1,25 +1,31 @@
 """
 main_window.py
-Modul utama tampilan GUI — QMainWindow dengan semua widget dan logika UI.
+Assembly utama — hanya menyatukan komponen UI dan menangani logika bisnis.
+Untuk ubah tampilan, edit file di folder ui/.
+Untuk ubah koneksi aria2, edit file di folder aria2/.
 """
 
 import os
 from pathlib import Path
 
 from PyQt6.QtWidgets import (
-    QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QPushButton, QLineEdit, QLabel, QTableWidget, QTableWidgetItem,
-    QProgressBar, QHeaderView, QMessageBox, QFileDialog, QFrame,
-    QStatusBar,
+    QMainWindow, QWidget, QVBoxLayout,
+    QLabel, QStatusBar, QMessageBox, QFileDialog,
 )
-from PyQt6.QtCore import Qt, QTimer
-from PyQt6.QtGui import QColor, QFont, QIcon
+from PyQt6.QtCore import QTimer, QPoint
 
-from aria2_client  import Aria2Client
-from aria2_manager import Aria2Manager
-from aria2_worker  import RefreshWorker
-from helpers       import fmt_size, fmt_speed, get_filename, STATUS_LABELS
-from styles        import DARK_STYLE
+from aria2 import Aria2Client, Aria2Manager, RefreshWorker
+from helpers import fmt_size, fmt_speed
+from styles  import DARK_STYLE
+from ui      import (
+    get_icon,
+    build_header,
+    build_url_bar,
+    build_toolbar,
+    build_table,
+    update_table,
+    show_context_menu,
+)
 
 
 class MainWindow(QMainWindow):
@@ -28,19 +34,21 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Aria2 GUI")
         self.setMinimumSize(900, 600)
         self.resize(1100, 700)
-        self.setWindowIcon(QIcon("assets/AriaNg.ico"))  # Bisa diganti dengan QIcon jika ada ikon khusus
 
+        # State
         self.client       = Aria2Client()
         self.manager      = Aria2Manager()
         self.worker       = None
         self.download_dir = str(Path.home() / "Downloads")
         self._retry_count = 0
+        self._downloads   = []   # cache download untuk context menu & detail
 
+        self.setWindowIcon(get_icon("app"))
         self.setStyleSheet(DARK_STYLE)
         self._build_ui()
         self._auto_connect()
 
-    # ── BUILD UI ──────────────────────────────────────────────────────────────
+    # ── ASSEMBLY UI ───────────────────────────────────────────────────────────
 
     def _build_ui(self):
         central = QWidget()
@@ -49,126 +57,21 @@ class MainWindow(QMainWindow):
         root.setContentsMargins(16, 16, 16, 10)
         root.setSpacing(12)
 
-        root.addLayout(self._build_header())
-        root.addWidget(self._build_url_bar())
-        root.addLayout(self._build_toolbar())
-        root.addWidget(self._build_table(), stretch=1)
+        root.addLayout(build_header(self))
+        root.addWidget(build_url_bar(self))
+        root.addLayout(build_toolbar(self))
+        root.addWidget(build_table(self), stretch=1)
 
+        # Status bar
         self.status_bar = QStatusBar()
         self.setStatusBar(self.status_bar)
-
         self._lbl_stat = QLabel("—")
         self._lbl_stat.setStyleSheet("color:#475569; font-size:11px;")
         self.status_bar.addPermanentWidget(self._lbl_stat)
 
-    def _build_header(self):
-        h = QHBoxLayout()
-
-        title = QLabel("⬇  Aria2 GUI")
-        title.setFont(QFont("Segoe UI", 16, QFont.Weight.Bold))
-        title.setStyleSheet("color:#e2e8f0; letter-spacing:-0.5px;")
-
-        self.lbl_dot = QLabel("●")
-        self.lbl_dot.setStyleSheet("color:#ef4444; font-size:12px;")
-        self.lbl_dot.setToolTip("Status koneksi aria2")
-
-        self.lbl_ver = QLabel("Tidak terhubung")
-        self.lbl_ver.setStyleSheet("color:#475569; font-size:11px;")
-
-        btn_dir = QPushButton("📁 Folder Download")
-        btn_dir.setObjectName("btn_clear")
-        btn_dir.clicked.connect(self._change_dir)
-
-        h.addWidget(title)
-        h.addSpacing(10)
-        h.addWidget(self.lbl_dot)
-        h.addWidget(self.lbl_ver)
-        h.addStretch()
-        h.addWidget(btn_dir)
-        return h
-
-    def _build_url_bar(self):
-        frame = QFrame()
-        frame.setStyleSheet("QFrame{background:#1a1f2e;border-radius:8px;}")
-        h = QHBoxLayout(frame)
-        h.setContentsMargins(12, 8, 8, 8)
-
-        self.url_input = QLineEdit()
-        self.url_input.setPlaceholderText("Masukkan URL download (HTTP, FTP, Magnet)...")
-        self.url_input.setStyleSheet("background:transparent;border:none;font-size:13px;")
-        self.url_input.returnPressed.connect(self._add_download)
-
-        btn_add = QPushButton("+ Tambah")
-        btn_add.setObjectName("btn_add")
-        btn_add.setFixedHeight(36)
-        btn_add.clicked.connect(self._add_download)
-
-        btn_torrent = QPushButton("🌱 Torrent")
-        btn_torrent.setObjectName("btn_torrent")
-        btn_torrent.setFixedHeight(36)
-        btn_torrent.clicked.connect(self._add_torrent)
-
-        h.addWidget(self.url_input)
-        h.addWidget(btn_torrent)
-        h.addWidget(btn_add)
-        return frame
-
-    def _build_toolbar(self):
-        h = QHBoxLayout()
-
-        self.btn_pause  = QPushButton("Pause")
-        self.btn_pause.setObjectName("btn_pause")
-        self.btn_pause.clicked.connect(self._pause_selected)
-
-        self.btn_resume = QPushButton("Resume")
-        self.btn_resume.setObjectName("btn_resume")
-        self.btn_resume.clicked.connect(self._resume_selected)
-
-        self.btn_remove = QPushButton("Hapus")
-        self.btn_remove.setObjectName("btn_remove")
-        self.btn_remove.clicked.connect(self._remove_selected)
-
-        self.btn_clear  = QPushButton("Bersihkan Selesai")
-        self.btn_clear.setObjectName("btn_clear")
-        self.btn_clear.clicked.connect(self._clear_completed)
-
-        for btn in [self.btn_pause, self.btn_resume, self.btn_remove, self.btn_clear]:
-            h.addWidget(btn)
-
-        h.addStretch()
-
-        self.lbl_dl = QLabel("⬇ —")
-        self.lbl_ul = QLabel("⬆ —")
-        for lbl in [self.lbl_dl, self.lbl_ul]:
-            lbl.setStyleSheet("color:#64748b; font-size:12px;")
-            h.addWidget(lbl)
-
-        return h
-
-    def _build_table(self):
-        self.table = QTableWidget()
-        self.table.setColumnCount(6)
-        self.table.setHorizontalHeaderLabels([
-            "Nama File", "Ukuran", "Progress", "Kecepatan", "Status", "GID"
-        ])
-        header = self.table.horizontalHeader()
-        header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
-        header.setSectionResizeMode(2, QHeaderView.ResizeMode.Fixed)
-        self.table.setColumnWidth(2, 160)
-        self.table.setColumnWidth(1, 90)
-        self.table.setColumnWidth(3, 100)
-        self.table.setColumnWidth(4, 110)
-        self.table.setColumnWidth(5, 80)
-        self.table.verticalHeader().setVisible(False)
-        self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
-        self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
-        self.table.setShowGrid(False)
-        return self.table
-
     # ── AUTO CONNECT ──────────────────────────────────────────────────────────
 
     def _auto_connect(self):
-        """Coba connect dulu; kalau gagal, otomatis start aria2."""
         self.status_bar.showMessage("Mencoba koneksi ke aria2...")
         QTimer.singleShot(200, self._try_connect)
 
@@ -178,10 +81,7 @@ class MainWindow(QMainWindow):
             return
 
         self.status_bar.showMessage("aria2 tidak berjalan, mencoba menjalankan otomatis...")
-        ok, msg = self.manager.start(
-            port=6800,
-            download_dir=self.download_dir
-        )
+        ok, msg = self.manager.start(port=6800, download_dir=self.download_dir)
         if not ok:
             self._on_connect_failed(msg)
             return
@@ -206,17 +106,25 @@ class MainWindow(QMainWindow):
         self.status_bar.showMessage(f"✔ Terhubung ke aria2 v{ver}", 4000)
 
         self.worker = RefreshWorker(self.client)
-        self.worker.data_ready.connect(self._update_table)
+        self.worker.data_ready.connect(self._on_data_ready)
         self.worker.start()
 
     def _on_connect_failed(self, msg):
         self.lbl_dot.setStyleSheet("color:#ef4444; font-size:12px;")
         self.lbl_ver.setText("Tidak terhubung")
-        self.status_bar.showMessage(f"✖ Gagal terhubung")
-        QMessageBox.critical(
-            self, "Gagal Terhubung",
-            f"Tidak bisa terhubung ke aria2.\n\n{msg}"
-        )
+        self.status_bar.showMessage("✖ Gagal terhubung")
+        QMessageBox.critical(self, "Gagal Terhubung",
+                             f"Tidak bisa terhubung ke aria2.\n\n{msg}")
+
+    # ── DATA REFRESH ──────────────────────────────────────────────────────────
+
+    def _on_data_ready(self, downloads: list, stat: dict):
+        update_table(self, downloads, stat)
+
+    # ── CONTEXT MENU ──────────────────────────────────────────────────────────
+
+    def _show_context_menu(self, pos: QPoint):
+        show_context_menu(self, pos)
 
     # ── DOWNLOAD ACTIONS ──────────────────────────────────────────────────────
 
@@ -263,6 +171,53 @@ class MainWindow(QMainWindow):
         if gid:
             self.client.unpause(gid)
 
+    def _toggle_pause_resume(self):
+        """Toggle pause/resume berdasarkan status download yang dipilih."""
+        gid = self._get_selected_gid()
+        if not gid:
+            return
+
+        # Cari status download dari cache
+        d      = next((x for x in self._downloads if x.get("gid") == gid), {})
+        status = d.get("status", "")
+
+        if status == "active":
+            self.client.pause(gid)
+        elif status in ("paused", "waiting"):
+            self.client.unpause(gid)
+
+    def _sync_pause_resume_btn(self):
+        """
+        Perbarui icon & label tombol toggle sesuai status baris yang dipilih.
+        - active  → tampilkan "Pause"
+        - paused/waiting → tampilkan "Resume"
+        - lainnya → disable tombol
+        """
+        from ui.icons import get_icon, ICON_SIZE
+        gid    = self._get_selected_gid()
+        btn    = self.btn_pause_resume
+        d      = next((x for x in self._downloads if x.get("gid") == gid), {}) if gid else {}
+        status = d.get("status", "")
+
+        if status == "active":
+            btn.setText("  Pause")
+            btn.setIcon(get_icon("pause"))
+            btn.setObjectName("btn_pause")
+            btn.setEnabled(True)
+        elif status in ("paused", "waiting"):
+            btn.setText("  Resume")
+            btn.setIcon(get_icon("resume"))
+            btn.setObjectName("btn_resume")
+            btn.setEnabled(True)
+        else:
+            btn.setText("  Pause")
+            btn.setIcon(get_icon("pause"))
+            btn.setObjectName("btn_pause")
+            btn.setEnabled(False)
+
+        # Re-apply stylesheet agar objectName baru terbaca
+        btn.setStyle(btn.style())
+
     def _remove_selected(self):
         gid = self._get_selected_gid()
         if not gid:
@@ -279,67 +234,12 @@ class MainWindow(QMainWindow):
         self.status_bar.showMessage("✔ Download selesai dibersihkan", 2000)
 
     def _change_dir(self):
-        d = QFileDialog.getExistingDirectory(self, "Pilih Folder Download", self.download_dir)
+        d = QFileDialog.getExistingDirectory(
+            self, "Pilih Folder Download", self.download_dir
+        )
         if d:
             self.download_dir = d
             self.status_bar.showMessage(f"Folder download: {d}", 3000)
-
-    # ── TABLE UPDATE ──────────────────────────────────────────────────────────
-
-    def _update_table(self, downloads, stat):
-        self.table.setRowCount(len(downloads))
-
-        for row, d in enumerate(downloads):
-            total  = int(d.get("totalLength", 0))
-            done   = int(d.get("completedLength", 0))
-            speed  = int(d.get("downloadSpeed", 0))
-            status = d.get("status", "unknown")
-            pct    = int(done / total * 100) if total > 0 else 0
-
-            # Nama file
-            self.table.setItem(row, 0, QTableWidgetItem(get_filename(d)))
-
-            # Ukuran
-            self.table.setItem(row, 1, QTableWidgetItem(fmt_size(total) if total else "—"))
-
-            # Progress bar
-            bar = QProgressBar()
-            bar.setValue(pct)
-            bar.setFormat(f"{pct}%")
-            bar.setTextVisible(True)
-            bar.setStyleSheet(
-                "QProgressBar{background:#1a1f2e;border:none;border-radius:3px;"
-                "color:#94a3b8;font-size:11px;}"
-                "QProgressBar::chunk{background:#3b82f6;border-radius:3px;}"
-            )
-            self.table.setCellWidget(row, 2, bar)
-
-            # Kecepatan
-            self.table.setItem(row, 3, QTableWidgetItem(
-                fmt_speed(speed) if status == "active" else "—"
-            ))
-
-            # Status
-            label, color = STATUS_LABELS.get(status, (status, "#94a3b8"))
-            st_item = QTableWidgetItem(label)
-            st_item.setForeground(QColor(color))
-            self.table.setItem(row, 4, st_item)
-
-            # GID
-            gid_item = QTableWidgetItem(d.get("gid", ""))
-            gid_item.setForeground(QColor("#334155"))
-            self.table.setItem(row, 5, gid_item)
-
-            self.table.setRowHeight(row, 42)
-
-        # Update speed labels & stat bar
-        self.lbl_dl.setText(f"⬇ {fmt_speed(stat.get('downloadSpeed', 0))}")
-        self.lbl_ul.setText(f"⬆ {fmt_speed(stat.get('uploadSpeed', 0))}")
-        self._lbl_stat.setText(
-            f"Aktif: {stat.get('numActive', 0)}  |  "
-            f"Antrian: {stat.get('numWaiting', 0)}  |  "
-            f"Total: {len(downloads)}"
-        )
 
     # ── CLOSE ─────────────────────────────────────────────────────────────────
 

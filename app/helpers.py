@@ -57,10 +57,10 @@ def get_filename(d):
 # ── Label & warna status download ───────────
 
 STATUS_LABELS = {
-    "active":   ("Downloading", "#4ade80"),
-    "waiting":  ("Waiting",     "#facc15"),
-    "paused":   ("Paused",      "#94a3b8"),
-    "complete": ("Complete",    "#60a5fa"),
-    "error":    ("Error",       "#f87171"),
-    "removed":  ("Removed",     "#f87171"),
+    "active":   ("⬇ Downloading", "#4ade80"),
+    "waiting":  ("⏸ Waiting",     "#facc15"),
+    "paused":   ("⏸ Paused",      "#94a3b8"),
+    "complete": ("✔ Complete",    "#60a5fa"),
+    "error":    ("✖ Error",       "#f87171"),
+    "removed":  ("✖ Removed",     "#f87171"),
 }
