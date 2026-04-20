@@ -1,11 +1,3 @@
-"""
-main_window.py
-Assembly utama — hanya menyatukan komponen UI dan menangani logika bisnis.
-Untuk ubah tampilan, edit file di folder ui/.
-Untuk ubah koneksi aria2, edit file di folder aria2_core/.
-Untuk ubah teks/bahasa, edit file di folder localization/.
-"""
-
 import os
 from pathlib import Path
 

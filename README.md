@@ -1,4 +1,7 @@
 # Aria2 GUI
+![Python](https://img.shields.io/badge/Rust-1.75-orange)
+![License](https://img.shields.io/badge/license-MIT-green)
+
 
 Download manager GUI untuk [aria2](https://aria2.github.io/), dibangun dengan Python & PyQt6.
 Auto-start dan auto-connect ke aria2 RPC — tidak perlu menjalankan aria2 secara manual.
