@@ -182,6 +182,60 @@ QMenu::item:disabled {
 color: #475569; 
 }
 
+QMenuBar {
+            background-color: #0f1117;
+            color: #e2e8f0;
+            font-size: 13px;
+            padding: 2px 4px;
+            border-bottom: 1px solid #1a1f2e;
+        }
+        QMenuBar::item {
+            padding: 4px 12px;
+            border-radius: 4px;
+        }
+        QMenuBar::item:selected {
+            background-color: #1e2435;
+        }
+        QMenu {
+            background-color: #1a1f2e;
+            border: 1px solid #2d3748;
+            border-radius: 8px;
+            padding: 4px;
+            color: #e2e8f0;
+            font-size: 13px;
+        }
+        QMenu::item {
+            padding: 8px 24px 8px 12px;
+            border-radius: 4px;
+        }
+        QMenu::item:selected {
+            background-color: #2d3748;
+        }
+        QMenu::separator {
+            height: 1px;
+            background: #2d3748;
+            margin: 4px 8px;
+        }
+        QMenu::item:disabled {
+            color: #475569;
+        }
+        QMessageBox {
+            background-color: #0f1117;
+            color: #e2e8f0;
+        }
+        QMessageBox QLabel {
+            color: #e2e8f0;
+            font-size: 13px;
+        }
+        QPushButton {
+            background-color: #1e2435;
+            color: #94a3b8;
+            border: 1px solid #2d3748;
+            border-radius: 6px;
+            padding: 6px 16px;
+            font-size: 12px;
+        }
+        QPushButton:hover { background-color: #2d3748; }
 
 QTextEdit{background:transparent;border:none;font-size:13px;}
 """
