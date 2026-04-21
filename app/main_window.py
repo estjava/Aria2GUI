@@ -15,11 +15,11 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import QTimer, QPoint
 
-from aria2 import Aria2Client, Aria2Manager, RefreshWorker
-from helpers     import fmt_size, fmt_speed
-from ui.css.style_loader import load_style
-from localization import tr, Translator
-from ui          import (
+from aria2          import Aria2Client, Aria2Manager, RefreshWorker
+from helpers        import fmt_size, fmt_speed
+from ui.css         import DARK_STYLE
+from localization   import tr, Translator
+from ui             import (
     get_icon,
     build_menu_bar,
     build_header,
@@ -46,7 +46,7 @@ class MainWindow(QMainWindow):
         self._downloads   = []
 
         self.setWindowIcon(get_icon("app"))
-        self.setStyleSheet(load_style("darkstyle"))
+        self.setStyleSheet(DARK_STYLE)
         self._build_ui()
         self._auto_connect()
 
@@ -74,26 +74,21 @@ class MainWindow(QMainWindow):
 
         # KIRI (permanent) — indikator koneksi aria2
         self.lbl_dot = QLabel("●")
-        self.lbl_dot.setStyleSheet("color:#ef4444; font-size:10px; padding:0 2px 0 6px;")
         self.lbl_dot.setToolTip("Status koneksi aria2")
 
         self.lbl_ver = QLabel(tr("sb_disconnected"))
-        self.lbl_ver.setStyleSheet("color:#475569; font-size:11px; padding-right:10px;")
 
         self.status_bar.insertPermanentWidget(0, self.lbl_dot)
         self.status_bar.insertPermanentWidget(1, self.lbl_ver)
 
         # KANAN (permanent) — kecepatan & statistik download
         self.lbl_dl = QLabel("⬇ —")
-        self.lbl_dl.setStyleSheet("color:#64748b; font-size:11px; padding-right:4px;")
 
         self.lbl_ul = QLabel("⬆ —")
-        self.lbl_ul.setStyleSheet("color:#64748b; font-size:11px; padding-right:10px;")
 
         self._lbl_stat = QLabel(
             f"{tr('sb_active')}: 0  |  {tr('sb_waiting')}: 0  |  {tr('sb_total')}: 0"
         )
-        self._lbl_stat.setStyleSheet("color:#475569; font-size:11px; padding-right:6px;")
 
         self.status_bar.addPermanentWidget(self.lbl_dl)
         self.status_bar.addPermanentWidget(self.lbl_ul)
@@ -137,9 +132,7 @@ class MainWindow(QMainWindow):
 
     def _on_connected(self):
         ver = self.client.get_version()
-        self.lbl_dot.setStyleSheet("color:#4ade80; font-size:10px; padding:0 2px 0 6px;")
         self.lbl_ver.setText(tr("sb_connected_label", ver=ver))
-        self.lbl_ver.setStyleSheet("color:#4ade80; font-size:11px; padding-right:10px;")
         self._set_status(tr("sb_connected", ver=ver), 4000)
 
         self.worker = RefreshWorker(self.client)
@@ -147,9 +140,7 @@ class MainWindow(QMainWindow):
         self.worker.start()
 
     def _on_connect_failed(self, msg):
-        self.lbl_dot.setStyleSheet("color:#ef4444; font-size:10px; padding:0 2px 0 6px;")
         self.lbl_ver.setText(tr("sb_disconnected"))
-        self.lbl_ver.setStyleSheet("color:#ef4444; font-size:11px; padding-right:10px;")
         self._set_status(tr("sb_failed", msg=msg), 8000)
         QMessageBox.critical(self, tr("dlg_connect_fail_title"),
                              tr("dlg_connect_fail_msg", msg=msg))

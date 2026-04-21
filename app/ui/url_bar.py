@@ -13,7 +13,6 @@ def build_url_bar(window) -> QFrame:
     frame = QFrame()
 
     h = QHBoxLayout(frame)
-    h.setContentsMargins(12, 8, 8, 8)
 
     window.url_input = QLineEdit()
     window.url_input.setPlaceholderText(tr("url_placeholder"))

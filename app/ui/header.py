@@ -15,7 +15,6 @@ def build_header(window) -> QHBoxLayout:
 
     title = QLabel(tr("header_title"))
     title.setFont(QFont("Segoe UI", 16, QFont.Weight.Bold))
-    title.setStyleSheet("color:#e2e8f0; letter-spacing:-0.5px;")
 
     window.btn_folder_download = QPushButton(tr("btn_folder"))
     window.btn_folder_download.setObjectName("btn_clear")
