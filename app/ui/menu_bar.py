@@ -12,7 +12,6 @@ from PyQt6.QtGui import QAction
 
 from localization import tr, Translator
 from ui.icons import get_icon
-from styles import DARK_STYLE
 
 
 def build_menu_bar(window) -> QMenuBar:
@@ -29,7 +28,6 @@ def build_menu_bar(window) -> QMenuBar:
     window._menus        = {}
 
     bar = window.menuBar()
-    bar.setStyleSheet(DARK_STYLE)
 
     # ── FILE ──────────────────────────────────────────────────────────────────
     menu_file = bar.addMenu(tr("menu_file"))
@@ -160,5 +158,4 @@ def _show_about(window):
         f"{tr('about_version')}<br>"
         f"{tr('about_license')}"
     )
-    msg.setStyleSheet(DARK_STYLE)
     msg.exec()

@@ -13,17 +13,6 @@ from localization import tr
 from helpers import fmt_size, fmt_speed, get_filename
 from ui.download_table import STATUS_MAP
 
-DIALOG_STYLE = """
-    QDialog { background-color: #0f1117; color: #e2e8f0; }
-    QLabel#lbl_key { color: #64748b; font-size: 11px; font-weight: bold; letter-spacing: 0.5px; }
-    QLabel#lbl_val { color: #e2e8f0; font-size: 13px; }
-    QDialogButtonBox QPushButton {
-        background-color: #1e2435; color: #94a3b8;
-        border: 1px solid #2d3748; border-radius: 6px;
-        padding: 6px 16px; font-size: 12px;
-    }
-    QDialogButtonBox QPushButton:hover { background-color: #2d3748; }
-"""
 
 
 def show_detail(parent, d: dict):
@@ -61,7 +50,6 @@ def show_detail(parent, d: dict):
     dlg = QDialog(parent)
     dlg.setWindowTitle(tr("detail_title"))
     dlg.setMinimumWidth(480)
-    dlg.setStyleSheet(DIALOG_STYLE)
 
     grid = QGridLayout()
     grid.setSpacing(10)
@@ -82,10 +70,6 @@ def show_detail(parent, d: dict):
     bar.setValue(pct)
     bar.setFormat(f"{pct}%")
     bar.setFixedHeight(8)
-    bar.setStyleSheet(
-        "QProgressBar{background:#1a1f2e;border:none;border-radius:4px;}"
-        "QProgressBar::chunk{background:#3b82f6;border-radius:4px;}"
-    )
 
     btn_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
     btn_box.button(QDialogButtonBox.StandardButton.Close).setText(tr("btn_close"))

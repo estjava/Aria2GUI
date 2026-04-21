@@ -145,7 +145,7 @@ env.bak/
 venv.bak/
 
 # Github
-.github/workflows/
+.github
 
 # Spyder project settings
 .spyderproject

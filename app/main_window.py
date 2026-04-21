@@ -1,22 +1,25 @@
+"""
+main_window.py
+Assembly utama — hanya menyatukan komponen UI dan menangani logika bisnis.
+Untuk ubah tampilan, edit file di folder ui/.
+Untuk ubah koneksi aria2, edit file di folder aria2/.
+Untuk ubah teks/bahasa, edit file di folder localization/.
+"""
+
 import os
 from pathlib import Path
 
-from PyQt6.QtWidgets    import (
-    QMainWindow, 
-    QWidget, 
-    QVBoxLayout,
-    QLabel, 
-    QStatusBar, 
-    QMessageBox, 
-    QFileDialog,
+from PyQt6.QtWidgets import (
+    QMainWindow, QWidget, QVBoxLayout,
+    QLabel, QStatusBar, QMessageBox, QFileDialog,
 )
-from PyQt6.QtCore       import QTimer, QPoint
+from PyQt6.QtCore import QTimer, QPoint
 
-from aria2              import Aria2Client, Aria2Manager, RefreshWorker
-from helpers            import fmt_size, fmt_speed
-from styles             import DARK_STYLE
-from localization       import tr, Translator
-from ui                 import (
+from aria2 import Aria2Client, Aria2Manager, RefreshWorker
+from helpers     import fmt_size, fmt_speed
+from ui.css.style_loader import load_style
+from localization import tr, Translator
+from ui          import (
     get_icon,
     build_menu_bar,
     build_header,
@@ -43,7 +46,7 @@ class MainWindow(QMainWindow):
         self._downloads   = []
 
         self.setWindowIcon(get_icon("app"))
-        self.setStyleSheet(DARK_STYLE)
+        self.setStyleSheet(load_style("darkstyle"))
         self._build_ui()
         self._auto_connect()
 

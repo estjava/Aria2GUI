@@ -12,7 +12,6 @@ from PyQt6.QtCore import QPoint
 
 from localization import tr
 from ui.icons import get_icon
-from styles             import DARK_STYLE
 
 
 
@@ -26,7 +25,6 @@ def show_context_menu(window, pos: QPoint):
     status = d.get("status", "")
 
     menu = QMenu(window)
-    menu.setStyleSheet(DARK_STYLE)  # Gunakan stylesheet yang sama dengan menu bar
 
     if status == "active":
         act = menu.addAction(get_icon("pause"), tr("ctx_pause"))
